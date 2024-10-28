@@ -66,6 +66,7 @@ app.post("/transfer", async (req: Request, res: Response) => {
     const txHash = await transfer(toAddress, amountInCKB);
     res.json({ txHash });
   } catch (error) {
+    console.error(`/transfer`, error);
     res.status(500).json({ error: (error as Error).message });
   }
 });
@@ -76,6 +77,7 @@ app.get("/balance", async (req: Request, res: Response) => {
     const balance = await cccClient.getBalance([address.script]);
     res.json({ balance: shannonToCKB(balance).toString() });
   } catch (error) {
+    console.error(`/balance`, error);
     res.status(500).json({ error: (error as Error).message });
   }
 })
@@ -86,6 +88,7 @@ app.get("/balance/:address", async (req: Request, res: Response) => {
     const balance = await capacityOf(address);
     res.json({ balance: shannonToCKB(balance).toString() });
   } catch (error) {
+    console.error(`/balance/${address}`, error);
     res.status(500).json({ error: (error as Error).message });
   }
 })
@@ -96,6 +99,7 @@ app.get("/address", async (req: Request, res: Response) => {
     const address = addressObj.toString()
     res.json({ address });
   } catch (error) {
+    console.error("/address", error);
     res.status(500).json({ error: (error as Error).message });
   }
 })

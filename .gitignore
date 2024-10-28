@@ -1,0 +1,42 @@
+# Node.js dependencies
+node_modules/
+# Yarn lock file
+yarn.lock
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# WebStorm project files
+.idea/
+*.iml
+
+# Compiled output
+dist/
+out/
+build/
+
+# Typescript cache
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Misc
+.DS_Store
+Thumbs.db
+
+# Webpack/Babel/TypeScript
+.cache/
+.vscode/

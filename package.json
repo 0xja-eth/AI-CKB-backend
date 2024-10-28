@@ -1,0 +1,36 @@
+{
+  "name": "ai-ckb-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@ckb-ccc/core": "^0.1.0-alpha.4",
+    "bech32": "^2.0.0",
+    "bip32": "^5.0.0-rc.0",
+    "bip39": "^3.1.0",
+    "dotenv": "^16.4.5",
+    "elliptic": "^6.6.0",
+    "express": "^4.21.1",
+    "js-sha3": "^0.9.3",
+    "tiny-secp256k1": "^2.2.3",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@types/elliptic": "^6.4.18",
+    "@types/express": "^4.17.13",
+    "dotenv-webpack": "^8.1.0",
+    "ts-jest": "^29.2.3",
+    "ts-loader": "^9.5.1",
+    "ts-mocha": "^10.0.0",
+    "typescript": "5.0.2",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  }
+}

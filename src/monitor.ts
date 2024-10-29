@@ -77,6 +77,10 @@ async function syncIncrementalTransactions() {
 
     const address = await getSigner().getAddressObjSecp256k1();
     const txs = await findTxs(address, startBlock, currentTip, filterInputs);
+    if (txs.length === 0) return;
+
+    console.log(`Found ${txs.length} new transactions from block ${startBlock} to ${currentTip}.`);
+
     const txDetails = await Promise.all(txs.map(async tx => fetchTxDetail(tx.txHash)));
 
     const pipeline = client.multi();

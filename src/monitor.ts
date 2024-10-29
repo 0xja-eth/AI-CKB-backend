@@ -12,11 +12,11 @@ const TransactionsKey = "transactions";
 const TransactionHashKey = "transaction_hash";
 
 const LockKey = "sync_lock";
-const LockExpiry = 60;  // 锁的有效时间（秒）
+const LockExpiry = 60;
 
 async function acquireLock() {
   const result = await client.set(LockKey, "locked", { NX: true, EX: LockExpiry });
-  return result === "OK";  // 成功获取锁时，Redis会返回"OK"
+  return result === "OK";
 }
 
 async function releaseLock() {
@@ -59,17 +59,14 @@ function txDetail2TransferInfo(txDetail: FetchedTx) {
 
 async function syncIncrementalTransactions() {
   try {
-    // 尝试获取锁
     const lockAcquired = await acquireLock();
     if (!lockAcquired) {
       console.log("Another sync process is running. Exiting...");
       return;
     }
 
-    // 获取最新的区块高度
     const currentTip = await getBlockNumber();
 
-    // 从Redis获取上次同步的区块号
     const lastSyncedBlock = await client.get(LastSyncedBlockKey);
     const startBlock = lastSyncedBlock ? Number(lastSyncedBlock) + 1 : 0;
 
@@ -92,14 +89,12 @@ async function syncIncrementalTransactions() {
     }
     await pipeline.exec();
 
-    // 更新当前同步到的区块号
     await client.set(LastSyncedBlockKey, currentTip.toString());
 
     console.log(`Synced transactions up to block ${currentTip}.`);
   } catch (error) {
     console.error("Error during syncing:", error);
   } finally {
-    // 释放锁
     await releaseLock();
   }
 }

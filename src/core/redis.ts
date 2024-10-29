@@ -102,7 +102,6 @@ export async function getKeys(pattern: string, count = 100) {
   let cursor = 0;
   let keys = [];
   do {
-    // 使用 SCAN 命令遍历所有匹配的键
     const {cursor: newCursor, keys: newKeys} = await client.scan(cursor, {
       MATCH: pattern, COUNT: count
     });

@@ -128,14 +128,14 @@ const offCKBConfig: OffCKBConfig = {
 
   get systemScripts() {
     const network = readEnvNetwork();
-    const networkSystemScripts: NetworkSystemScripts = require('./offckb/system-scripts.json');
+    const networkSystemScripts: NetworkSystemScripts = require('../../offckb/system-scripts.json');
     const systemScripts = networkSystemScripts[network];
     return systemScripts;
   },
 
   get myScripts() {
     const network = readEnvNetwork();
-    const networkMyScripts: NetworkMyScripts = require('./offckb/my-scripts.json');
+    const networkMyScripts: NetworkMyScripts = require('../../offckb/my-scripts.json');
     const myScripts = networkMyScripts[network];
     return myScripts;
   },

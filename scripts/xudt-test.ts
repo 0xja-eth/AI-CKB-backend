@@ -14,19 +14,20 @@ export async function queryIssuedTokenCells(address: Address, xudtArgs: Hex) {
     xudtArgs
   );
 
-  const collected: {cell: ccc.Cell, amount: any}[] = [];
+  const res: {cell: ccc.Cell, amount: any}[] = [];
   const collector = cccClient.findCellsByLock(address.script, typeScript, true);
   for await (const cell of collector) {
-    collected.push({cell, amount: ccc.numLeFromBytes(cell.outputData)});
+    res.push({cell, amount: ccc.numLeFromBytes(cell.outputData)});
   }
-  return collected;
+  return res;
 }
 
 async function main() {
   const tip = await getBlockNumber()
   const address = await getSigner().getAddressObjSecp256k1()
 
-  const xudtArgs = "0x2ae639d6233f9b15545573b8e78f38ff7aa6c7bf8ef6460bf1f12d0a76c09c4e" + "";
+  // const xudtArgs = "0x2ae639d6233f9b15545573b8e78f38ff7aa6c7bf8ef6460bf1f12d0a76c09c4e" + "";
+  const xudtArgs = "0x7de82d61a7eb2ec82b0dc653e558ba120efcbfbb44dac87c12972d05bf25065300000000";
 
   const cells = await queryIssuedTokenCells(address, xudtArgs as Hex)
   console.log(cells, address.toString())

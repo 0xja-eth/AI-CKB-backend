@@ -8,8 +8,9 @@ export async function capacityOf(address: string) {
 }
 
 export async function capacityOfXUDT(xudtArgs: string, address: string) {
-  const cellsInfo = await getXUDTCells(address, xudtArgs);
-  return cellsInfo.reduce((acc, {amount}) => acc + amount, 0);
+  const addr = await ccc.Address.fromString(address, cccClient);
+  const cellsInfo = await getXUDTCells(addr, xudtArgs as Hex);
+  return cellsInfo.reduce((acc, {amount}) => acc + amount, 0n);
 }
 
 export async function getXUDTCells(address: Address, xudtArgs: Hex) {
@@ -17,12 +18,12 @@ export async function getXUDTCells(address: Address, xudtArgs: Hex) {
     cccClient, ccc.KnownScript.XUdt, xudtArgs
   );
 
-  const collected: {cell: ccc.Cell, amount: any}[] = [];
+  const res: {cell: ccc.Cell, amount: bigint}[] = [];
   const collector = cccClient.findCellsByLock(address.script, typeScript, true);
   for await (const cell of collector)
-    collected.push({cell, amount: ccc.numLeFromBytes(cell.outputData)});
+    res.push({cell, amount: ccc.numLeFromBytes(cell.outputData)});
 
-  return collected;
+  return res;
 }
 
 export async function transfer(toAddress: string, amountInCKB: string): Promise<string> {
@@ -51,21 +52,39 @@ export async function transfer(toAddress: string, amountInCKB: string): Promise<
 
   return txHash;
 }
-export async function transferXUDT(xudtArgs: string, toAddress: string, amount: string): Promise<string> {
+export async function transferXUDT(xudtArgs: string, toAddress: string, amountInCKB: string): Promise<string> {
   const signer = getSigner()
+  const fromLock = (await signer.getAddressObjSecp256k1()).script;
   const address = await ccc.Address.fromString(toAddress, cccClient);
   const { script: toLock } = address
 
-  const typeScript = await ccc.Script.fromKnownScript(cccClient, ccc.KnownScript.XUdt, xudtArgs);
+  const xUdtType = await ccc.Script.fromKnownScript(cccClient, ccc.KnownScript.XUdt, xudtArgs);
 
+  const amount = ccc.fixedPointFrom(amountInCKB)
   const tx = ccc.Transaction.from({
-    outputs: [{ lock: toLock, type: typeScript }],
+    outputs: [{ lock: toLock, type: xUdtType }],
     outputsData: [ccc.numLeToBytes(amount, 16)],
   });
+  await tx.completeInputsByUdt(signer, xUdtType);
 
-  await tx.addCellDepsOfKnownScripts(cccClient, ccc.KnownScript.XUdt);
+  const balanceDiff =
+    (await tx.getInputsUdtBalance(signer.client, xUdtType)) -
+    tx.getOutputsUdtBalance(xUdtType);
+  console.log("balanceDiff: ", balanceDiff);
+  if (balanceDiff > ccc.Zero) {
+    tx.addOutput(
+      {
+        lock: fromLock,
+        type: xUdtType,
+      },
+      ccc.numLeToBytes(balanceDiff, 16)
+    );
+  }
+  await tx.addCellDepsOfKnownScripts(signer.client, ccc.KnownScript.XUdt);
+
   await tx.completeInputsByCapacity(signer);
   await tx.completeFeeBy(signer, 1000);
+
   const txHash = await signer.sendTransaction(tx);
   console.log(
     `Transaction sent. Check it at https://pudge.explorer.nervos.org/transaction/${txHash}`
@@ -73,3 +92,52 @@ export async function transferXUDT(xudtArgs: string, toAddress: string, amount: 
 
   return txHash;
 }
+
+// export async function transferTokenToAddress(
+//   udtIssuerArgs: string,
+//   senderPrivKey: string,
+//   amount: string,
+//   receiverAddress: string
+// ) {
+//   const signer = new ccc.SignerCkbPrivateKey(cccClient, senderPrivKey);
+//   const senderLockScript = (await signer.getAddressObjSecp256k1()).script;
+//   const receiverLockScript = (
+//     await ccc.Address.fromString(receiverAddress, cccClient)
+//   ).script;
+//
+//   const xudtArgs = udtIssuerArgs;
+//   const xUdtType = await ccc.Script.fromKnownScript(
+//     cccClient,
+//     ccc.KnownScript.XUdt,
+//     xudtArgs
+//   );
+//
+//   const tx = ccc.Transaction.from({
+//     outputs: [{ lock: receiverLockScript, type: xUdtType }],
+//     outputsData: [ccc.numLeToBytes(amount, 16)],
+//   });
+//   await tx.completeInputsByUdt(signer, xUdtType);
+//
+//   const balanceDiff =
+//     (await tx.getInputsUdtBalance(signer.client, xUdtType)) -
+//     tx.getOutputsUdtBalance(xUdtType);
+//   console.log("balanceDiff: ", balanceDiff);
+//   if (balanceDiff > ccc.Zero) {
+//     tx.addOutput(
+//       {
+//         lock: senderLockScript,
+//         type: xUdtType,
+//       },
+//       ccc.numLeToBytes(balanceDiff, 16)
+//     );
+//   }
+//   await tx.addCellDepsOfKnownScripts(signer.client, ccc.KnownScript.XUdt);
+//
+//   // Complete missing parts for transaction
+//   await tx.completeInputsByCapacity(signer);
+//   await tx.completeFeeBy(signer, 1000);
+//
+//   const txHash = await signer.sendTransaction(tx);
+//   console.log("The transaction hash is", txHash);
+//   return { txHash, tx };
+// }

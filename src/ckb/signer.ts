@@ -15,4 +15,6 @@ export function getAddress() {
 
 export function shannonToCKB(amount: bigint) {
   return amount / 100000000n;
+  // return (Number(amount) / 100000000);
+  // return Number(amount) / 100000000;
 }

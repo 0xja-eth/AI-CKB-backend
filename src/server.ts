@@ -61,7 +61,7 @@ app.get("/balance/:xudtArgs", async (req: Request, res: Response) => {
 
   try {
     const address = await getAddress();
-    const balance = await capacityOfXUDT(xudtArgs, address);
+    const balance = await capacityOfXUDT(xudtArgs, address.toString());
     res.json({ balance: shannonToCKB(balance).toString() });
   } catch (error) {
     console.error(`/balance`, error);

@@ -26,11 +26,17 @@ export const LongDuration = 24 * 60 * 60; // 1d
 export const VeryLongDuration = 7 * 24 * 60 * 60; // 7d
 
 export async function connect() {
-  if (client.isReady && client.isOpen) return;
+  if (client.isOpen) return;
 
-  console.log("Redis connecting...");
-  await client.connect();
-  console.log("Redis connected", client.isReady, client.isOpen);
+  try {
+    console.log("Redis connecting...");
+    await client.connect();
+    console.log("Redis connected", client.isReady, client.isOpen);
+  } catch (err) {
+    console.error("Redis connect error", err, client.isReady, client.isOpen);
+
+    if (!client.isOpen) throw err;
+  }
 }
 export function cache(duration = VeryShortDuration) {
   return async (req, res, next) => {

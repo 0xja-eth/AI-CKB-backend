@@ -5,6 +5,8 @@ import {client} from "../core/redis";
 
 export const ExplorerURL = process.env.EXPLORER_URL || "https://pudge.explorer.nervos.org";
 
+export const AddressTransferLimit = Number(process.env.TRANSFER_LIMIT_ADDRESS || "1");
+
 export const CKBTransferLimit = BigInt(process.env.TRANSFER_LIMIT_CKB || "3000");
 
 export const getXUDTTransferLimit = (xudtArgs: Hex) =>
@@ -37,26 +39,36 @@ export async function getXUDTCells(address: Address, xudtArgs: Hex) {
   return res;
 }
 
-async function checkTransferLimit(key: string, amount: bigint, limit: bigint, noThrow = false) {
+async function checkTransferLimit(key: string, toAddress: string, amount: bigint, limit: bigint, noThrow = false) {
   const currentHour = new Date().toISOString().slice(0, 13); // e.g., "2024-10-31T10"
-  const redisKey = `${key}:${currentHour}`;
+  const hourKey = `${key}:${currentHour}`;
+  const addrKey = `${key}:${toAddress}`;
 
-  const currentAmount = BigInt(await client.get(redisKey) || "0");
+  const addrCount = Number(await client.get(addrKey) || "0");
+  if (!noThrow && addrCount + 1 > AddressTransferLimit) {
+    throw new Error("Address transfer limit exceeded");
+  }
+
+  const currentAmount = BigInt(await client.get(hourKey) || "0");
   if (!noThrow && currentAmount + amount > limit) {
     throw new Error("Hourly transfer limit exceeded");
   }
 }
-async function increaseTransferLimit(key: string, amount: bigint) {
+async function increaseTransferLimit(key: string, toAddress: string, amount: bigint) {
   const currentHour = new Date().toISOString().slice(0, 13); // e.g., "2024-10-31T10"
-  const redisKey = `${key}:${currentHour}`;
+  const hourKey = `${key}:${currentHour}`;
+  const addrKey = `${key}:${toAddress}`;
+  // const redisKey = `${key}:${currentHour}`;
 
-  await client.incrBy(redisKey, Number(amount));
-  await client.expire(redisKey, 3600); // Set expiration to 1 hour
+  await client.incrBy(hourKey, Number(amount));
+  await client.expire(hourKey, 3600); // Set expiration to 1 hour
+
+  await client.incr(addrKey);
 }
 
 export async function transfer(toAddress: string, amountInCKB: string, ignoreLimit = false): Promise<string> {
   // Check limit before transferring
-  await checkTransferLimit(CKBTransferRecordKey, BigInt(amountInCKB), CKBTransferLimit, ignoreLimit);
+  await checkTransferLimit(CKBTransferRecordKey, toAddress, BigInt(amountInCKB), CKBTransferLimit, ignoreLimit);
 
   const signer = getSigner()
   const address = await ccc.Address.fromString(toAddress, cccClient);
@@ -81,7 +93,7 @@ export async function transfer(toAddress: string, amountInCKB: string, ignoreLim
     `Transaction sent. Check it at ${ExplorerURL}/transaction/${txHash}`
   );
 
-  await increaseTransferLimit(CKBTransferRecordKey, BigInt(amountInCKB));
+  await increaseTransferLimit(CKBTransferRecordKey, toAddress, BigInt(amountInCKB));
 
   return txHash;
 }
@@ -90,7 +102,7 @@ export async function transferXUDT(xudtArgs: string, toAddress: string, amountIn
   const limit = getXUDTTransferLimit(xudtArgs as Hex);
 
   // Check limit before transferring
-  await checkTransferLimit(recordKey, BigInt(amountInCKB), limit, ignoreLimit);
+  await checkTransferLimit(recordKey, toAddress, BigInt(amountInCKB), limit, ignoreLimit);
 
   const signer = getSigner()
   const fromLock = (await signer.getAddressObjSecp256k1()).script;
@@ -129,7 +141,7 @@ export async function transferXUDT(xudtArgs: string, toAddress: string, amountIn
     `Transaction sent. Check it at ${ExplorerURL}/transaction/${txHash}`
   );
 
-  await increaseTransferLimit(recordKey, BigInt(amountInCKB));
+  await increaseTransferLimit(recordKey, toAddress, BigInt(amountInCKB));
 
   return txHash;
 }

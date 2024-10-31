@@ -6,6 +6,7 @@ import express, {Request, Response} from "express";
 import {cccClient} from "./core/ccc-client";
 import {capacityOf, capacityOfXUDT, transfer, transferXUDT} from "./ckb/transfer";
 import {getAddress, shannonToCKB} from "./ckb/signer";
+import {connect} from "./core/redis";
 
 const AIToken = process.env.AI_TOKEN as string;
 
@@ -13,14 +14,14 @@ const app = express();
 app.use(express.json());
 
 app.post("/transfer", async (req: Request, res: Response) => {
-  const { toAddress, amountInCKB } = req.body;
+  const { toAddress, amountInCKB, ignoreLimit = false } = req.body;
 
   const auth = req.header("Authorization");
   if (auth !== AIToken)
     return res.status(401).json({ error: "Unauthorized" });
 
   try {
-    const txHash = await transfer(toAddress, amountInCKB);
+    const txHash = await transfer(toAddress, amountInCKB, ignoreLimit);
     res.json({ txHash });
   } catch (error) {
     console.error(`/transfer`, error);
@@ -30,14 +31,14 @@ app.post("/transfer", async (req: Request, res: Response) => {
 
 app.post("/transfer/:xudtArgs", async (req: Request, res: Response) => {
   const { xudtArgs } = req.params;
-  const { toAddress, amountInCKB } = req.body;
+  const { toAddress, amountInCKB, ignoreLimit = false } = req.body;
 
   const auth = req.header("Authorization");
   if (auth !== AIToken)
     return res.status(401).json({ error: "Unauthorized" });
 
   try {
-    const txHash = await transferXUDT(xudtArgs, toAddress, amountInCKB);
+    const txHash = await transferXUDT(xudtArgs, toAddress, amountInCKB, ignoreLimit);
     res.json({ txHash });
   } catch (error) {
     console.error(`/transfer`, error);
@@ -93,6 +94,8 @@ app.get("/address", async (req: Request, res: Response) => {
 })
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+connect().then(() =>
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  })
+);

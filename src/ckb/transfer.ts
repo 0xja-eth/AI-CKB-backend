@@ -37,22 +37,26 @@ export async function getXUDTCells(address: Address, xudtArgs: Hex) {
   return res;
 }
 
-async function checkAndIncrementTransferLimit(key: string, amount: bigint, limit: bigint) {
+async function checkTransferLimit(key: string, amount: bigint, limit: bigint, noThrow = false) {
   const currentHour = new Date().toISOString().slice(0, 13); // e.g., "2024-10-31T10"
   const redisKey = `${key}:${currentHour}`;
 
   const currentAmount = BigInt(await client.get(redisKey) || "0");
-  if (currentAmount + amount > limit) {
+  if (!noThrow && currentAmount + amount > limit) {
     throw new Error("Hourly transfer limit exceeded");
   }
+}
+async function increaseTransferLimit(key: string, amount: bigint) {
+  const currentHour = new Date().toISOString().slice(0, 13); // e.g., "2024-10-31T10"
+  const redisKey = `${key}:${currentHour}`;
 
-  await client.incrby(redisKey, Number(amount));
+  await client.incrBy(redisKey, Number(amount));
   await client.expire(redisKey, 3600); // Set expiration to 1 hour
 }
 
-export async function transfer(toAddress: string, amountInCKB: string): Promise<string> {
+export async function transfer(toAddress: string, amountInCKB: string, ignoreLimit = false): Promise<string> {
   // Check limit before transferring
-  await checkAndIncrementTransferLimit(CKBTransferRecordKey, BigInt(amountInCKB), CKBTransferLimit);
+  await checkTransferLimit(CKBTransferRecordKey, BigInt(amountInCKB), CKBTransferLimit, ignoreLimit);
 
   const signer = getSigner()
   const address = await ccc.Address.fromString(toAddress, cccClient);
@@ -77,14 +81,16 @@ export async function transfer(toAddress: string, amountInCKB: string): Promise<
     `Transaction sent. Check it at ${ExplorerURL}/transaction/${txHash}`
   );
 
+  await increaseTransferLimit(CKBTransferRecordKey, BigInt(amountInCKB));
+
   return txHash;
 }
-export async function transferXUDT(xudtArgs: string, toAddress: string, amountInCKB: string): Promise<string> {
+export async function transferXUDT(xudtArgs: string, toAddress: string, amountInCKB: string, ignoreLimit = false): Promise<string> {
   const recordKey = getTransferRecordKey(xudtArgs as Hex);
   const limit = getXUDTTransferLimit(xudtArgs as Hex);
 
   // Check limit before transferring
-  await checkAndIncrementTransferLimit(recordKey, BigInt(amountInCKB), limit);
+  await checkTransferLimit(recordKey, BigInt(amountInCKB), limit, ignoreLimit);
 
   const signer = getSigner()
   const fromLock = (await signer.getAddressObjSecp256k1()).script;
@@ -122,6 +128,8 @@ export async function transferXUDT(xudtArgs: string, toAddress: string, amountIn
   console.log(
     `Transaction sent. Check it at ${ExplorerURL}/transaction/${txHash}`
   );
+
+  await increaseTransferLimit(recordKey, BigInt(amountInCKB));
 
   return txHash;
 }

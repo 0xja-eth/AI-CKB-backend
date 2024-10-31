@@ -1,6 +1,17 @@
 import {Address, ccc, Hex} from "@ckb-ccc/core";
 import {cccClient} from "../core/ccc-client";
 import {getSigner} from "./signer";
+import {client} from "../core/redis";
+
+export const ExplorerURL = process.env.EXPLORER_URL || "https://pudge.explorer.nervos.org";
+
+export const CKBTransferLimit = BigInt(process.env.TRANSFER_LIMIT_CKB || "3000");
+
+export const getXUDTTransferLimit = (xudtArgs: Hex) =>
+  BigInt(process.env[`TRANSFER_LIMIT_${xudtArgs}`] || "1000");
+
+export const CKBTransferRecordKey = "transfer:ckb";
+export const getTransferRecordKey = (xudtArgs: Hex) => `transfer:${xudtArgs}`;
 
 export async function capacityOf(address: string) {
   const addr = await ccc.Address.fromString(address, cccClient);
@@ -26,7 +37,23 @@ export async function getXUDTCells(address: Address, xudtArgs: Hex) {
   return res;
 }
 
+async function checkAndIncrementTransferLimit(key: string, amount: bigint, limit: bigint) {
+  const currentHour = new Date().toISOString().slice(0, 13); // e.g., "2024-10-31T10"
+  const redisKey = `${key}:${currentHour}`;
+
+  const currentAmount = BigInt(await client.get(redisKey) || "0");
+  if (currentAmount + amount > limit) {
+    throw new Error("Hourly transfer limit exceeded");
+  }
+
+  await client.incrby(redisKey, Number(amount));
+  await client.expire(redisKey, 3600); // Set expiration to 1 hour
+}
+
 export async function transfer(toAddress: string, amountInCKB: string): Promise<string> {
+  // Check limit before transferring
+  await checkAndIncrementTransferLimit(CKBTransferRecordKey, BigInt(amountInCKB), CKBTransferLimit);
+
   const signer = getSigner()
   const address = await ccc.Address.fromString(toAddress, cccClient);
   const { script: toLock } = address
@@ -47,12 +74,18 @@ export async function transfer(toAddress: string, amountInCKB: string): Promise<
   await tx.completeFeeBy(signer, 1000);
   const txHash = await signer.sendTransaction(tx);
   console.log(
-    `Transaction sent. Check it at https://pudge.explorer.nervos.org/transaction/${txHash}`
+    `Transaction sent. Check it at ${ExplorerURL}/transaction/${txHash}`
   );
 
   return txHash;
 }
 export async function transferXUDT(xudtArgs: string, toAddress: string, amountInCKB: string): Promise<string> {
+  const recordKey = getTransferRecordKey(xudtArgs as Hex);
+  const limit = getXUDTTransferLimit(xudtArgs as Hex);
+
+  // Check limit before transferring
+  await checkAndIncrementTransferLimit(recordKey, BigInt(amountInCKB), limit);
+
   const signer = getSigner()
   const fromLock = (await signer.getAddressObjSecp256k1()).script;
   const address = await ccc.Address.fromString(toAddress, cccClient);
@@ -87,7 +120,7 @@ export async function transferXUDT(xudtArgs: string, toAddress: string, amountIn
 
   const txHash = await signer.sendTransaction(tx);
   console.log(
-    `Transaction sent. Check it at https://pudge.explorer.nervos.org/transaction/${txHash}`
+    `Transaction sent. Check it at ${ExplorerURL}/transaction/${txHash}`
   );
 
   return txHash;

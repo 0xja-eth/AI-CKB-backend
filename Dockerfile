@@ -1,11 +1,17 @@
 # Stage 1: Build Fiber node
 FROM rust:1.73-alpine as fiber-builder
 
-# 安装必要的依赖（包括 clang, libclang-dev 等）
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# 安装必要的依赖 (在 Alpine 里使用 apk 而非 apt-get)
+RUN apk add --no-cache \
     clang \
-    libclang-dev \
-    && rm -rf /var/lib/apt/lists/*
+    clang-dev \
+    musl-dev
+
+## 安装必要的依赖（包括 clang, libclang-dev 等）
+#RUN apt-get update && apt-get install -y --no-install-recommends \
+#    clang \
+#    libclang-dev \
+#    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /fiber

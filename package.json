@@ -4,7 +4,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack"
+    "build": "webpack",
+    "import-key": "mkdir -p \"$FIBER_NODE_PATH/ckb\" && echo \"$CKB_KEY\" > \"$FIBER_NODE_PATH/ckb/key\"",
+    "start-node": "RUST_LOG=info \"$FIBER_NODE_PATH/fnn\" -c \"$FIBER_NODE_PATH/config.yml\" -d \"$FIBER_NODE_PATH\"",
+    "start": "npm run import-key; npm run start-node & node dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -12,6 +15,7 @@
   "description": "",
   "dependencies": {
     "@ckb-ccc/core": "^0.1.0-alpha.4",
+    "axios": "^1.7.9",
     "bech32": "^2.0.0",
     "bip32": "^5.0.0-rc.0",
     "bip39": "^3.1.0",

@@ -1,0 +1,427 @@
+openapi: 3.0.0
+info:
+  title: Fiber RPC API
+  description: RPC API for interacting with Fiber Node
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8227
+    description: Local Fiber node
+
+paths:
+  /connect_peer:
+    post:
+      summary: Connect to a peer
+      description: Connect to a peer in the Fiber network
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - jsonrpc
+                - method
+                - params
+                - id
+              properties:
+                jsonrpc:
+                  type: string
+                  enum: ['2.0']
+                method:
+                  type: string
+                  enum: ['connect_peer']
+                params:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - address
+                      - save
+                    properties:
+                      address:
+                        type: string
+                        description: Peer address to connect to
+                      save:
+                        type: boolean
+                        description: Whether to save the peer connection
+                id:
+                  type: integer
+                  description: RPC request ID
+      responses:
+        '200':
+          description: Successfully connected to peer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                  result:
+                    type: object
+                    description: Empty object on success
+                  id:
+                    type: integer
+
+  /open_channel:
+    post:
+      summary: Open a new channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - jsonrpc
+                - method
+                - params
+                - id
+              properties:
+                jsonrpc:
+                  type: string
+                  enum: ['2.0']
+                method:
+                  type: string
+                  enum: ['open_channel']
+                params:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - peer_id
+                      - funding_amount
+                    properties:
+                      peer_id:
+                        type: string
+                        description: ID of the peer
+                      funding_amount:
+                        type: string
+                        description: Amount in hex format (CKB)
+                      public:
+                        type: boolean
+                        default: true
+                id:
+                  type: integer
+      responses:
+        '200':
+          description: Channel opened successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      temporary_channel_id:
+                        type: string
+                  id:
+                    type: integer
+
+  /list_channels:
+    post:
+      summary: List all channels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - jsonrpc
+                - method
+                - params
+                - id
+              properties:
+                jsonrpc:
+                  type: string
+                  enum: ['2.0']
+                method:
+                  type: string
+                  enum: ['list_channels']
+                params:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      peer_id:
+                        type: string
+                        description: Optional peer ID to filter channels
+                      include_closed:
+                        type: boolean
+                        description: Whether to include closed channels
+                id:
+                  type: integer
+      responses:
+        '200':
+          description: List of channels
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      channels:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            channel_id:
+                              type: string
+                            peer_id:
+                              type: string
+                            local_balance:
+                              type: string
+                              description: Local balance in hex format
+                            remote_balance:
+                              type: string
+                              description: Remote balance in hex format
+                            offered_tlc_balance:
+                              type: string
+                              description: Offered TLC balance in hex format
+                            received_tlc_balance:
+                              type: string
+                              description: Received TLC balance in hex format
+                            status:
+                              type: string
+                  id:
+                    type: integer
+
+  /shutdown_channel:
+    post:
+      summary: Close a channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - jsonrpc
+                - method
+                - params
+                - id
+              properties:
+                jsonrpc:
+                  type: string
+                  enum: ['2.0']
+                method:
+                  type: string
+                  enum: ['shutdown_channel']
+                params:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - channel_id
+                      - close_script
+                      - fee_rate
+                    properties:
+                      channel_id:
+                        type: string
+                      close_script:
+                        type: object
+                        properties:
+                          code_hash:
+                            type: string
+                          hash_type:
+                            type: string
+                            enum: ['type', 'data']
+                          args:
+                            type: string
+                      force:
+                        type: boolean
+                        default: false
+                      fee_rate:
+                        type: string
+                        description: Fee rate in hex format
+                id:
+                  type: integer
+      responses:
+        '200':
+          description: Channel shutdown initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                  result:
+                    type: object
+                  id:
+                    type: integer
+
+  /parse_invoice:
+    post:
+      summary: Parse a Fiber invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - jsonrpc
+                - method
+                - params
+                - id
+              properties:
+                jsonrpc:
+                  type: string
+                  enum: ['2.0']
+                method:
+                  type: string
+                  enum: ['parse_invoice']
+                params:
+                  type: array
+                  items:
+                    type: string
+                    description: Invoice string to parse
+                id:
+                  type: integer
+      responses:
+        '200':
+          description: Parsed invoice details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      amount:
+                        type: string
+                        description: Amount in hex format
+                      data:
+                        type: object
+                        properties:
+                          payment_hash:
+                            type: string
+                          description:
+                            type: string
+                  id:
+                    type: integer
+
+  /add_tlc:
+    post:
+      summary: Add a TLC (Transferable Locked Cash)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - jsonrpc
+                - method
+                - params
+                - id
+              properties:
+                jsonrpc:
+                  type: string
+                  enum: ['2.0']
+                method:
+                  type: string
+                  enum: ['add_tlc']
+                params:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - channel_id
+                      - amount
+                      - payment_hash
+                    properties:
+                      channel_id:
+                        type: string
+                      amount:
+                        type: string
+                        description: Amount in hex format
+                      payment_hash:
+                        type: string
+                id:
+                  type: integer
+      responses:
+        '200':
+          description: TLC added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                  result:
+                    type: object
+                    properties:
+                      tlc_id:
+                        type: string
+                  id:
+                    type: integer
+
+components:
+  schemas:
+    JsonRpcRequest:
+      type: object
+      required:
+        - jsonrpc
+        - method
+        - params
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ['2.0']
+        method:
+          type: string
+        params:
+          type: array
+        id:
+          type: integer
+
+    JsonRpcResponse:
+      type: object
+      required:
+        - jsonrpc
+        - result
+        - id
+      properties:
+        jsonrpc:
+          type: string
+        result:
+          type: object
+        id:
+          type: integer
+
+    JsonRpcError:
+      type: object
+      required:
+        - jsonrpc
+        - error
+        - id
+      properties:
+        jsonrpc:
+          type: string
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+            message:
+              type: string
+            data:
+              type: object
+        id:
+          type: integer

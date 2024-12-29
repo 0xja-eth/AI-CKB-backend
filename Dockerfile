@@ -1,51 +1,35 @@
 # Stage 1: Build Fiber node
-FROM rust:1.73-alpine as fiber-builder
+FROM rust:1.73-bullseye as fiber-builder
 
-# 安装必要的依赖 (在 Alpine 里使用 apk 而非 apt-get)
-RUN apk add --no-cache \
+# 安装必要依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
     clang \
-    clang-dev \
-    musl-dev
+    libclang-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-## 安装必要的依赖（包括 clang, libclang-dev 等）
-#RUN apt-get update && apt-get install -y --no-install-recommends \
-#    clang \
-#    libclang-dev \
-#    && rm -rf /var/lib/apt/lists/*
-
-# Set working directory
 WORKDIR /fiber
 
-# Copy Fiber source code
 COPY fiber/ .
-
-# Build Fiber in release mode
 RUN cargo build --release
 
-# Stage 2: Build and run Node.js application
-FROM node:18-alpine
+# Stage 2: Node.js app (Debian-based)
+FROM node:18-bullseye
 
-# Create app directory
 WORKDIR /app
 
-# Copy Fiber binary from builder stage
+# Copy the compiled Rust binary
 COPY --from=fiber-builder /fiber/target/release/fnn /app/fiber-node/fnn
 
 # Copy package files
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
 # Copy application source
 COPY . .
 
-# Build TypeScript
 RUN npm run build
 
-# Expose port
 EXPOSE 3000
-EXPOSE 8228 # Fiber port
+EXPOSE 8228
 
-# Start application
 CMD ["npm", "start"]

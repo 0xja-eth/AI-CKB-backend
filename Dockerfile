@@ -1,5 +1,5 @@
 # Stage 1: Build Fiber node
-FROM rust:1.73-bullseye as fiber-builder
+FROM rust:1.73-alpine as fiber-builder
 
 # 安装必要的依赖（包括 clang, libclang-dev 等）
 RUN apt-get update && apt-get install -y --no-install-recommends \

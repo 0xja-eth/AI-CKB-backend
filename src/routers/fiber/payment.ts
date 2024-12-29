@@ -6,30 +6,37 @@ import {transferByInvoice, TransferError} from "../../ckb/fiber/transfer";
 import {fiberClient, hex2Ckb} from "../../ckb/fiber/rpc";
 import {shannonToCKB} from "../../ckb/signer";
 import router from "./index";
+import {wait} from "../../utils/promise";
 
 router.post("/transfer", authMiddleware, async (req: Request, res: Response) => {
-  let { invoice, amountInCKB, channelId } = req.body;
-
-  if (!channelId && process.env.DEFAULT_PEER_ID) { // Use JoyId Channel
-    const { channels } = await fiberClient.listChannels({
-      peer_id: process.env.DEFAULT_PEER_ID
-    })
-
-    channelId = channels[0].channel_id
-    console.log(`Using default channel: ${channelId}`)
-  }
-
-  if (!invoice || !amountInCKB || !channelId) {
-    return res.status(400).json({
-      error: "Invoice, amount and channel ID are required"
-    });
-  }
+  let { invoice, amountInCKB } = req.body;
 
   try {
-    const tlcId = await transferByInvoice(invoice, Number(amountInCKB), channelId);
+    // if (!channelId && process.env.DEFAULT_PEER_ID) { // Use JoyId Channel
+    //   const { channels } = await fiberClient.listChannels({
+    //     peer_id: process.env.DEFAULT_PEER_ID
+    //   })
+    //
+    //   channelId = channels[0].channel_id
+    //   console.log(`Using default channel: ${channelId}`)
+    // }
+
+    if (!invoice || !amountInCKB) {
+      return res.status(400).json({
+        error: "Invoice, amount and channel ID are required"
+      });
+    }
+
+    let payment = await fiberClient.sendPayment({ invoice })
+
+    while (payment.status == "Inflight") {
+      await wait(1000) // 1s
+      payment = await fiberClient.getPayment(payment.payment_hash)
+    }
+
     res.json({
-      message: "TLC transfer created",
-      tlcId
+      message: "Transfer created",
+      payment
     });
   } catch (error) {
     console.error("/fiber/transfer", error);

@@ -59,6 +59,33 @@ export interface InvoiceResponse {
   invoice: Invoice;
 }
 
+export type PaymentSessionStatus = 'Success' | 'Inflight' | 'Failed';
+
+export interface PaymentResponse {
+  payment_hash: Hash256;
+  status: PaymentSessionStatus;
+  created_at: string; // hex timestamp
+  last_updated_at: string; // hex timestamp
+  failed_error?: string;
+  fee: string; // hex amount
+}
+
+export interface SendPaymentParams {
+  target_pubkey?: string;
+  amount?: string; // hex amount
+  payment_hash?: Hash256;
+  final_tlc_expiry_delta?: string; // hex milliseconds
+  tlc_expiry_limit?: string; // hex milliseconds
+  invoice?: string;
+  timeout?: string; // hex seconds
+  max_fee_amount?: string; // hex amount
+  max_parts?: string; // hex
+  keysend?: boolean;
+  udt_type_script?: Script;
+  allow_self_payment?: boolean;
+  dry_run?: boolean;
+}
+
 export class FiberRPCClient {
   private rpcUrl: string;
   private counter: number;
@@ -181,6 +208,17 @@ export class FiberRPCClient {
 
   async parseInvoice(invoice: string): Promise<Invoice> {
     return (await this.call<{invoice: Invoice}>('parse_invoice', [{ invoice }])).invoice;
+  }
+
+  // Payment Module
+  async sendPayment(params: SendPaymentParams): Promise<PaymentResponse> {
+    return await this.call<PaymentResponse>('send_payment', [params]);
+  }
+
+  async getPayment(paymentHash: Hash256): Promise<PaymentResponse> {
+    return await this.call<PaymentResponse>('get_payment', [{
+      payment_hash: paymentHash
+    }]);
   }
 
   // endregion

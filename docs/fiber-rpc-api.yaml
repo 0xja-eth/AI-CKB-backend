@@ -2,151 +2,65 @@ openapi: 3.0.0
 info:
   title: Fiber RPC API
   description: |
-    JSON-RPC API for interacting with Fiber Node
-
-    ## Examples
-
-    ### Connect to a peer
+    JSON-RPC API for interacting with Fiber Node. All requests are POST requests to the root endpoint (/).
+    Each request must follow the JSON-RPC 2.0 specification with the following format:
     ```json
     {
       "jsonrpc": "2.0",
-      "method": "peer_connect_peer",
-      "params": [{
-        "address": "/ip4/127.0.0.1/tcp/8228",
-        "save": true
-      }],
+      "method": "method_name",
+      "params": [{ ... }],
       "id": 1
-    }
-    ```
-
-    ### Open a channel
-    ```json
-    {
-      "jsonrpc": "2.0",
-      "method": "channel_open_channel",
-      "params": [{
-        "peer_id": "QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N",
-        "funding_amount": "0x5af3107a4000", // 100 CKB
-        "public": true
-      }],
-      "id": 2
-    }
-    ```
-
-    ### List channels
-    ```json
-    {
-      "jsonrpc": "2.0",
-      "method": "channel_list_channels",
-      "params": [{
-        "peer_id": "QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N",
-        "include_closed": false
-      }],
-      "id": 3
-    }
-    ```
-
-    ### Add TLC for payment
-    ```json
-    {
-      "jsonrpc": "2.0",
-      "method": "channel_add_tlc",
-      "params": [{
-        "channel_id": "0x1234...",
-        "amount": "0x2540be400", // 1 CKB
-        "payment_hash": "0xabcd...",
-        "expiry": "0x63e3b148", // Unix timestamp in hex
-        "hash_algorithm": "sha256"
-      }],
-      "id": 4
-    }
-    ```
-
-    ### Create new invoice
-    ```json
-    {
-      "jsonrpc": "2.0",
-      "method": "invoice_new_invoice",
-      "params": [{
-        "amount": "0x2540be400", // 1 CKB
-        "description": "Payment for service",
-        "currency": "fibb",
-        "payment_preimage": "0x1234...",
-        "expiry": "0xe10", // 1 hour in seconds
-        "hash_algorithm": "sha256"
-      }],
-      "id": 5
-    }
-    ```
-
-    ### Parse invoice
-    ```json
-    {
-      "jsonrpc": "2.0",
-      "method": "invoice_parse_invoice",
-      "params": [{
-        "invoice": "fiber1qqqsyqcyq5rqwzqfpg9scrgwpugpzysnzs23v9n3kvfxlnsnr8d45cpzqnu4pq4q3wa"
-      }],
-      "id": 6
-    }
-    ```
-
-    ### Close channel
-    ```json
-    {
-      "jsonrpc": "2.0",
-      "method": "channel_shutdown_channel",
-      "params": [{
-        "channel_id": "0x1234...",
-        "close_script": {
-          "code_hash": "0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8",
-          "hash_type": "type",
-          "args": "0x5678..."
-        },
-        "force": false,
-        "fee_rate": "0x2540be400" // 1 CKB
-      }],
-      "id": 7
-    }
-    ```
-
-    ## Helper Functions
-
-    ### Convert CKB to Hex
-    ```typescript
-    function ckb2Hex(ckb: number): string {
-      return `0x${(ckb * 10 ** 8).toString(16)}`;
-    }
-    ```
-
-    ### Convert Hex to CKB
-    ```typescript
-    function hex2Ckb(hex: string): number {
-      return Number(hex) / 10 ** 8;
-    }
-    ```
-
-    ### Convert Number to Hex
-    ```typescript
-    function num2Hex(num: number): string {
-      return `0x${num.toString(16)}`;
-    }
-    ```
-
-    ### Convert Hex to Number
-    ```typescript
-    function hex2Num(hex: string): number {
-      return Number(hex);
     }
     ```
   version: 1.0.0
 
 servers:
-  - url: http://localhost:8227
+  - url: http://localhost:8228
     description: Local Fiber node
 
 components:
   schemas:
+    JsonRpcRequest:
+      type: object
+      required:
+        - jsonrpc
+        - method
+        - params
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ['2.0']
+        method:
+          type: string
+        params:
+          type: array
+          items:
+            type: object
+        id:
+          type: integer
+
+    JsonRpcResponse:
+      type: object
+      required:
+        - jsonrpc
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ['2.0']
+        result:
+          type: object
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+            message:
+              type: string
+        id:
+          type: integer
+
     Script:
       type: object
       properties:
@@ -182,546 +96,339 @@ components:
                 type: string
         local_balance:
           type: string
-          description: Balance in hex format
         offered_tlc_balance:
           type: string
-          description: Balance in hex format
         remote_balance:
           type: string
-          description: Balance in hex format
         received_tlc_balance:
           type: string
-          description: Balance in hex format
         latest_commitment_transaction_hash:
           type: string
         created_at:
           type: string
 
-    Invoice:
+    PaymentResponse:
       type: object
+      required:
+        - payment_hash
+        - status
+        - created_at
+        - last_updated_at
+        - fee
       properties:
-        currency:
+        payment_hash:
           type: string
-          enum: ['fibb', 'fibt', 'fibd']
-        amount:
+          description: The payment hash
+        status:
           type: string
-          description: Amount in hex format
-        signature:
+          enum: ['pending', 'succeeded', 'failed']
+          description: The status of the payment
+        created_at:
           type: string
-        data:
-          type: object
-          properties:
-            timestamp:
-              type: string
-            payment_hash:
-              type: string
-            attrs:
-              type: array
-              items:
-                type: object
+          description: Creation timestamp in hex format (milliseconds from UNIX epoch)
+        last_updated_at:
+          type: string
+          description: Last update timestamp in hex format (milliseconds from UNIX epoch)
+        failed_error:
+          type: string
+          description: Error message if payment failed
+        fee:
+          type: string
+          description: Fee paid for the payment in hex format
 
 paths:
-  /peer_connect_peer:
+  /:
     post:
-      summary: Connect to a peer
+      summary: JSON-RPC endpoint
+      description: All Fiber RPC methods are called through this endpoint
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - jsonrpc
-                - method
-                - params
-                - id
-              properties:
-                jsonrpc:
-                  type: string
-                  enum: ['2.0']
-                method:
-                  type: string
-                  enum: ['peer_connect_peer']
-                params:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - address
-                    properties:
-                      address:
-                        type: string
-                        description: Peer multiaddr
-                      save:
-                        type: boolean
-                        default: false
-                id:
-                  type: integer
-      responses:
-        '200':
-          description: Successfully connected to peer
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  jsonrpc:
-                    type: string
-                  result:
-                    type: 'null'
-                  id:
-                    type: integer
+              oneOf:
+                # Peer Module
+                - allOf:
+                    - $ref: '#/components/schemas/JsonRpcRequest'
+                    - type: object
+                      properties:
+                        method:
+                          enum: ['connect_peer']
+                        params:
+                          type: array
+                          items:
+                            type: object
+                            required: ['address']
+                            properties:
+                              address:
+                                type: string
+                                description: Peer multiaddr
+                              save:
+                                type: boolean
+                                default: false
 
-  /peer_disconnect_peer:
-    post:
-      summary: Disconnect from a peer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - jsonrpc
-                - method
-                - params
-                - id
-              properties:
-                jsonrpc:
-                  type: string
-                  enum: ['2.0']
-                method:
-                  type: string
-                  enum: ['peer_disconnect_peer']
-                params:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - peer_id
-                    properties:
-                      peer_id:
-                        type: string
-                id:
-                  type: integer
-      responses:
-        '200':
-          description: Successfully disconnected from peer
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  jsonrpc:
-                    type: string
-                  result:
-                    type: 'null'
-                  id:
-                    type: integer
+                - allOf:
+                    - $ref: '#/components/schemas/JsonRpcRequest'
+                    - type: object
+                      properties:
+                        method:
+                          enum: ['disconnect_peer']
+                        params:
+                          type: array
+                          items:
+                            type: object
+                            required: ['peer_id']
+                            properties:
+                              peer_id:
+                                type: string
 
-  /channel_open_channel:
-    post:
-      summary: Open a new channel
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - jsonrpc
-                - method
-                - params
-                - id
-              properties:
-                jsonrpc:
-                  type: string
-                  enum: ['2.0']
-                method:
-                  type: string
-                  enum: ['channel_open_channel']
-                params:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - peer_id
-                      - funding_amount
-                    properties:
-                      peer_id:
-                        type: string
-                      funding_amount:
-                        type: string
-                        description: Amount in hex format
-                      public:
-                        type: boolean
-                        default: true
-                      funding_udt_type_script:
-                        $ref: '#/components/schemas/Script'
-                id:
-                  type: integer
-      responses:
-        '200':
-          description: Channel opened successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  jsonrpc:
-                    type: string
-                  result:
-                    type: object
-                    properties:
-                      temporary_channel_id:
-                        type: string
-                  id:
-                    type: integer
+                # Channel Module
+                - allOf:
+                    - $ref: '#/components/schemas/JsonRpcRequest'
+                    - type: object
+                      properties:
+                        method:
+                          enum: ['open_channel']
+                        params:
+                          type: array
+                          items:
+                            type: object
+                            required: ['peer_id', 'funding_amount']
+                            properties:
+                              peer_id:
+                                type: string
+                              funding_amount:
+                                type: string
+                                description: Amount in hex format
+                              public:
+                                type: boolean
+                                default: true
+                              funding_udt_type_script:
+                                $ref: '#/components/schemas/Script'
 
-  /channel_list_channels:
-    post:
-      summary: List all channels
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - jsonrpc
-                - method
-                - params
-                - id
-              properties:
-                jsonrpc:
-                  type: string
-                  enum: ['2.0']
-                method:
-                  type: string
-                  enum: ['channel_list_channels']
-                params:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      peer_id:
-                        type: string
-                      include_closed:
-                        type: boolean
-                id:
-                  type: integer
-      responses:
-        '200':
-          description: List of channels
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  jsonrpc:
-                    type: string
-                  result:
-                    type: object
-                    properties:
-                      channels:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Channel'
-                  id:
-                    type: integer
+                - allOf:
+                    - $ref: '#/components/schemas/JsonRpcRequest'
+                    - type: object
+                      properties:
+                        method:
+                          enum: ['list_channels']
+                        params:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              peer_id:
+                                type: string
+                              include_closed:
+                                type: boolean
 
-  /channel_add_tlc:
-    post:
-      summary: Add a TLC (Transferable Locked Cash)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - jsonrpc
-                - method
-                - params
-                - id
-              properties:
-                jsonrpc:
-                  type: string
-                  enum: ['2.0']
-                method:
-                  type: string
-                  enum: ['channel_add_tlc']
-                params:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - channel_id
-                      - amount
-                      - payment_hash
-                    properties:
-                      channel_id:
-                        type: string
-                      amount:
-                        type: string
-                        description: Amount in hex format
-                      payment_hash:
-                        type: string
-                      expiry:
-                        type: string
-                        description: Expiry timestamp in hex format
-                      hash_algorithm:
-                        type: string
-                        enum: ['sha256']
-                        default: 'sha256'
-                id:
-                  type: integer
-      responses:
-        '200':
-          description: TLC added successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  jsonrpc:
-                    type: string
-                  result:
-                    type: object
-                    properties:
-                      tlc_id:
-                        type: string
-                  id:
-                    type: integer
+                - allOf:
+                    - $ref: '#/components/schemas/JsonRpcRequest'
+                    - type: object
+                      properties:
+                        method:
+                          enum: ['add_tlc']
+                        params:
+                          type: array
+                          items:
+                            type: object
+                            required: ['channel_id', 'amount', 'payment_hash']
+                            properties:
+                              channel_id:
+                                type: string
+                              amount:
+                                type: string
+                                description: Amount in hex format
+                              payment_hash:
+                                type: string
+                              expiry:
+                                type: string
+                                description: Expiry timestamp in hex format
+                              hash_algorithm:
+                                type: string
+                                enum: ['sha256']
+                                default: 'sha256'
 
-  /channel_remove_tlc:
-    post:
-      summary: Remove a TLC
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - jsonrpc
-                - method
-                - params
-                - id
-              properties:
-                jsonrpc:
-                  type: string
-                  enum: ['2.0']
-                method:
-                  type: string
-                  enum: ['channel_remove_tlc']
-                params:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - channel_id
-                      - tlc_id
-                      - reason
-                    properties:
-                      channel_id:
-                        type: string
-                      tlc_id:
-                        type: string
-                      reason:
-                        type: object
-                        required:
-                          - payment_preimage
-                        properties:
-                          payment_preimage:
-                            type: string
-                id:
-                  type: integer
-      responses:
-        '200':
-          description: TLC removed successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  jsonrpc:
-                    type: string
-                  result:
-                    type: 'null'
-                  id:
-                    type: integer
+                - allOf:
+                    - $ref: '#/components/schemas/JsonRpcRequest'
+                    - type: object
+                      properties:
+                        method:
+                          enum: ['remove_tlc']
+                        params:
+                          type: array
+                          items:
+                            type: object
+                            required: ['channel_id', 'tlc_id', 'reason']
+                            properties:
+                              channel_id:
+                                type: string
+                              tlc_id:
+                                type: string
+                              reason:
+                                type: object
+                                required: ['payment_preimage']
+                                properties:
+                                  payment_preimage:
+                                    type: string
 
-  /channel_shutdown_channel:
-    post:
-      summary: Close a channel
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - jsonrpc
-                - method
-                - params
-                - id
-              properties:
-                jsonrpc:
-                  type: string
-                  enum: ['2.0']
-                method:
-                  type: string
-                  enum: ['channel_shutdown_channel']
-                params:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - channel_id
-                      - close_script
-                      - fee_rate
-                    properties:
-                      channel_id:
-                        type: string
-                      close_script:
-                        $ref: '#/components/schemas/Script'
-                      force:
-                        type: boolean
-                        default: false
-                      fee_rate:
-                        type: string
-                        description: Fee rate in hex format
-                id:
-                  type: integer
-      responses:
-        '200':
-          description: Channel shutdown initiated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  jsonrpc:
-                    type: string
-                  result:
-                    type: 'null'
-                  id:
-                    type: integer
+                - allOf:
+                    - $ref: '#/components/schemas/JsonRpcRequest'
+                    - type: object
+                      properties:
+                        method:
+                          enum: ['shutdown_channel']
+                        params:
+                          type: array
+                          items:
+                            type: object
+                            required: ['channel_id', 'close_script', 'fee_rate']
+                            properties:
+                              channel_id:
+                                type: string
+                              close_script:
+                                $ref: '#/components/schemas/Script'
+                              force:
+                                type: boolean
+                                default: false
+                              fee_rate:
+                                type: string
+                                description: Fee rate in hex format
+                                default: '0x3f2'
 
-  /invoice_new_invoice:
-    post:
-      summary: Create a new invoice
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - jsonrpc
-                - method
-                - params
-                - id
-              properties:
-                jsonrpc:
-                  type: string
-                  enum: ['2.0']
-                method:
-                  type: string
-                  enum: ['invoice_new_invoice']
-                params:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - amount
-                      - currency
-                      - payment_preimage
-                    properties:
-                      amount:
-                        type: string
-                        description: Amount in hex format
-                      description:
-                        type: string
-                      currency:
-                        type: string
-                        enum: ['fibb', 'fibt', 'fibd']
-                      payment_preimage:
-                        type: string
-                      expiry:
-                        type: string
-                        description: Expiry duration in hex format (seconds)
-                      hash_algorithm:
-                        type: string
-                        enum: ['sha256']
-                        default: 'sha256'
-                id:
-                  type: integer
-      responses:
-        '200':
-          description: Invoice created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  jsonrpc:
-                    type: string
-                  result:
-                    type: object
-                    properties:
-                      invoice_address:
-                        type: string
-                      invoice:
-                        $ref: '#/components/schemas/Invoice'
-                  id:
-                    type: integer
+                # Invoice Module
+                - allOf:
+                    - $ref: '#/components/schemas/JsonRpcRequest'
+                    - type: object
+                      properties:
+                        method:
+                          enum: ['new_invoice']
+                        params:
+                          type: array
+                          items:
+                            type: object
+                            required: ['amount', 'currency', 'payment_preimage']
+                            properties:
+                              amount:
+                                type: string
+                                description: Amount in hex format
+                              description:
+                                type: string
+                              currency:
+                                type: string
+                                enum: ['fibb', 'fibt', 'fibd']
+                              payment_preimage:
+                                type: string
+                              expiry:
+                                type: string
+                                description: Expiry duration in hex format (seconds)
+                              hash_algorithm:
+                                type: string
+                                enum: ['sha256']
+                                default: 'sha256'
 
-  /invoice_parse_invoice:
-    post:
-      summary: Parse a Fiber invoice
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - jsonrpc
-                - method
-                - params
-                - id
-              properties:
-                jsonrpc:
-                  type: string
-                  enum: ['2.0']
-                method:
-                  type: string
-                  enum: ['invoice_parse_invoice']
-                params:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - invoice
-                    properties:
-                      invoice:
-                        type: string
-                        description: Invoice string to parse
-                id:
-                  type: integer
+                - allOf:
+                    - $ref: '#/components/schemas/JsonRpcRequest'
+                    - type: object
+                      properties:
+                        method:
+                          enum: ['parse_invoice']
+                        params:
+                          type: array
+                          items:
+                            type: object
+                            required: ['invoice']
+                            properties:
+                              invoice:
+                                type: string
+                                description: Invoice string to parse
+
+                # Payment Module
+                - allOf:
+                    - $ref: '#/components/schemas/JsonRpcRequest'
+                    - type: object
+                      properties:
+                        method:
+                          enum: ['send_payment']
+                        params:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              target_pubkey:
+                                type: string
+                                description: The identifier of the payment target
+                              amount:
+                                type: string
+                                description: Amount in hex format
+                              payment_hash:
+                                type: string
+                                description: The hash to use within the payment's HTLC
+                              final_tlc_expiry_delta:
+                                type: string
+                                description: TLC expiry delta for the final hop in milliseconds (hex)
+                              tlc_expiry_limit:
+                                type: string
+                                description: TLC expiry limit for the whole payment in milliseconds (hex)
+                              invoice:
+                                type: string
+                                description: The encoded invoice to send to the recipient
+                              timeout:
+                                type: string
+                                description: Payment timeout in seconds (hex)
+                              max_fee_amount:
+                                type: string
+                                description: Maximum fee amounts in shannons (hex)
+                              max_parts:
+                                type: string
+                                description: Max parts for multi-part payments (hex)
+                              keysend:
+                                type: boolean
+                                description: Keysend payment
+                              udt_type_script:
+                                $ref: '#/components/schemas/Script'
+                                description: UDT type script for the payment
+                              allow_self_payment:
+                                type: boolean
+                                description: Allow self payment
+                                default: false
+                              dry_run:
+                                type: boolean
+                                description: Dry run for payment validation
+                                default: false
+
+                - allOf:
+                    - $ref: '#/components/schemas/JsonRpcRequest'
+                    - type: object
+                      properties:
+                        method:
+                          enum: ['get_payment']
+                        params:
+                          type: array
+                          items:
+                            type: object
+                            required: ['payment_hash']
+                            properties:
+                              payment_hash:
+                                type: string
+                                description: The payment hash to retrieve
+
       responses:
         '200':
-          description: Parsed invoice details
+          description: Successful response
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  jsonrpc:
-                    type: string
-                  result:
-                    $ref: '#/components/schemas/Invoice'
-                  id:
-                    type: integer
+                $ref: '#/components/schemas/JsonRpcResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcResponse'

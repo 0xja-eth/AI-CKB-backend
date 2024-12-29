@@ -29,7 +29,7 @@ router.post("/connect", authMiddleware, async (req: Request, res: Response) => {
 
 // Open channel
 router.post("/channel", authMiddleware, async (req: Request, res: Response) => {
-  const { peerId, fundingAmount, isPublic = true } = req.body;
+  const { peerId = process.env.DEFAULT_PEER_ID, fundingAmount, isPublic = true } = req.body;
 
   if (!peerId || !fundingAmount) {
     return res.status(400).json({
@@ -64,7 +64,7 @@ router.get("/channels", authMiddleware, async (req: Request, res: Response) => {
   try {
     const channels = await fiberClient.listChannels({
       peer_id: peerId as string,
-      include_closed: (includeClosed as string).toLowerCase() === 'true'
+      include_closed: (includeClosed as string)?.toLowerCase() === 'true'
     });
 
     // Format amounts to CKB
@@ -120,7 +120,7 @@ router.post("/channel/close", authMiddleware, async (req: Request, res: Response
       code_hash: process.env.CLOSE_CODE_HASH,
       hash_type: "type",
       args: process.env.CLOSE_ARGS
-    }, force = false, feeRate = 0 } = req.body;
+    }, force = false, feeRate = 1010 } = req.body;
 
   if (!closeScript) {
     return res.status(400).json({

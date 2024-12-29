@@ -7,7 +7,8 @@
     "build": "webpack",
     "import-key": "mkdir -p \"$FIBER_NODE_PATH/ckb\" && echo \"$CKB_KEY\" > \"$FIBER_NODE_PATH/ckb/key\"",
     "start-node": "RUST_LOG=info \"$FIBER_NODE_PATH/fnn\" -c \"$FIBER_NODE_PATH/config.yml\" -d \"$FIBER_NODE_PATH\"",
-    "start": "npm run import-key; npm run start-node & node dist/index.js"
+    "start-backend": "node dist/index.js",
+    "start": "npm run import-key; npm run start-node & npm run start-backend"
   },
   "keywords": [],
   "author": "",

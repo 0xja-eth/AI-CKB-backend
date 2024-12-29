@@ -95,14 +95,14 @@ export class FiberRPCClient {
 
   // Peer Module
   async connectPeer(address: MultiAddr, save?: boolean): Promise<void> {
-    await this.call<void>('peer_connect_peer', [{
+    await this.call<void>('connect_peer', [{
       address,
       save,
     }]);
   }
 
   async disconnectPeer(peerId: PeerId): Promise<void> {
-    await this.call<void>('peer_disconnect_peer', [{
+    await this.call<void>('disconnect_peer', [{
       peer_id: peerId,
     }]);
   }
@@ -114,14 +114,14 @@ export class FiberRPCClient {
     public?: boolean;
     funding_udt_type_script?: Script;
   }): Promise<{ temporary_channel_id: Hash256 }> {
-    return await this.call<{ temporary_channel_id: Hash256 }>('channel_open_channel', [params]);
+    return await this.call<{ temporary_channel_id: Hash256 }>('open_channel', [params]);
   }
 
   async listChannels(params?: {
     peer_id?: PeerId;
     include_closed?: boolean;
   }): Promise<ChannelListResponse> {
-    return await this.call<ChannelListResponse>('channel_list_channels', [params || {}]);
+    return await this.call<ChannelListResponse>('list_channels', [params || {}]);
   }
 
   async addTLC(params: {
@@ -136,7 +136,7 @@ export class FiberRPCClient {
       expiry: params.expiry || num2Hex(Date.now() + this.tlcExpirySecond * 1000),
       hash_algorithm: params.hash_algorithm || 'sha256',
     };
-    return await this.call<{ tlc_id: string }>('channel_add_tlc', [requestParams]);
+    return await this.call<{ tlc_id: string }>('add_tlc', [requestParams]);
   }
 
   async removeTLC(params: {
@@ -144,7 +144,7 @@ export class FiberRPCClient {
     tlc_id: string;
     payment_preimage: string;
   }): Promise<void> {
-    await this.call<void>('channel_remove_tlc', [{
+    await this.call<void>('remove_tlc', [{
       channel_id: params.channel_id,
       tlc_id: params.tlc_id,
       reason: {
@@ -159,7 +159,7 @@ export class FiberRPCClient {
     force?: boolean;
     fee_rate: string;
   }): Promise<void> {
-    await this.call<void>('channel_shutdown_channel', [params]);
+    await this.call<void>('shutdown_channel', [params]);
   }
 
   // Invoice Module
@@ -176,11 +176,11 @@ export class FiberRPCClient {
       expiry: params.expiry || num2Hex(this.invoiceExpirySecond), // `0x${this.invoiceExpirySecond.toString(16)}`,
       hash_algorithm: params.hash_algorithm || 'sha256',
     };
-    return await this.call<InvoiceResponse>('invoice_new_invoice', [requestParams]);
+    return await this.call<InvoiceResponse>('new_invoice', [requestParams]);
   }
 
   async parseInvoice(invoice: string): Promise<Invoice> {
-    return await this.call<Invoice>('invoice_parse_invoice', [{ invoice }]);
+    return (await this.call<{invoice: Invoice}>('parse_invoice', [{ invoice }])).invoice;
   }
 
   // endregion

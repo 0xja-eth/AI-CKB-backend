@@ -1,4 +1,4 @@
-import {cccClient} from "../core/ccc-client";
+import {cccClient} from "../../core/ccc-client";
 import {Address, ClientTransactionResponse} from "@ckb-ccc/core";
 
 export async function getBlockNumber() {

@@ -3,9 +3,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import cron from "node-cron";
-import {FetchedTx, fetchTxDetail, filterInputs, findTxs, getBlockNumber} from "./ckb/tx";
+import {FetchedTx, fetchTxDetail, filterInputs, findTxs, getBlockNumber} from "./services/ckb/tx";
 import {client, connect} from "./core/redis";
-import {getSigner, shannonToCKB} from "./ckb/signer";
+import {getSigner, shannonToCKB} from "./services/ckb/signer";
 
 const LastSyncedBlockKey = "last_synced_block";
 const TransactionsKey = "transactions";
@@ -61,7 +61,7 @@ async function syncIncrementalTransactions() {
   try {
     const lockAcquired = await acquireLock();
     if (!lockAcquired) {
-      console.log("Another sync process is running. Exiting...");
+      // console.log("Another sync process is running. Exiting...");
       return;
     }
 
@@ -71,7 +71,7 @@ async function syncIncrementalTransactions() {
     const startBlock = lastSyncedBlock ? Number(lastSyncedBlock) + 1 : 0;
 
     if (startBlock > currentTip) {
-      console.log("No new blocks to sync.");
+      // console.log("No new blocks to sync.");
       return;
     }
 
@@ -105,7 +105,7 @@ async function syncIncrementalTransactions() {
 
 connect().then(() => {
   cron.schedule("*/3 * * * * *", async () => {
-    console.log("Running incremental sync...");
+    // console.log("Running incremental sync...");
     await syncIncrementalTransactions();
   });
 

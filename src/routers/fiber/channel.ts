@@ -2,7 +2,7 @@
 // Connect to peer
 import {authMiddleware} from "../auth";
 import {Request, Response} from "express";
-import {ckb2Hex, fiberClient, hex2Ckb, num2Hex} from "../../ckb/fiber/rpc";
+import {ckb2Hex, fiberClient, hex2Ckb, num2Hex} from "../../services/ckb/fiber/rpc";
 import router from "./index";
 
 router.post("/connect", authMiddleware, async (req: Request, res: Response) => {

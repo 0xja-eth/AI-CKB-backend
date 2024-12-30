@@ -86,6 +86,34 @@ export interface SendPaymentParams {
   dry_run?: boolean;
 }
 
+export interface UdtCfgInfos {
+  [key: string]: {
+    code_hash: string;
+    hash_type: string;
+    args: string;
+  };
+}
+
+export interface NodeInfo {
+  version: string;
+  commit_hash: string;
+  public_key: string;
+  node_name?: string;
+  peer_id: PeerId;
+  addresses: MultiAddr[];
+  chain_hash: Hash256;
+  open_channel_auto_accept_min_ckb_funding_amount: string; // hex
+  auto_accept_channel_ckb_funding_amount: string; // hex
+  tlc_expiry_delta: string; // hex
+  tlc_min_value: string; // hex
+  tlc_max_value: string; // hex
+  tlc_fee_proportional_millionths: string; // hex
+  channel_count: string; // hex
+  pending_channel_count: string; // hex
+  peers_count: string; // hex
+  udt_cfg_infos: UdtCfgInfos;
+}
+
 export class FiberRPCClient {
   private rpcUrl: string;
   private counter: number;
@@ -219,6 +247,11 @@ export class FiberRPCClient {
     return await this.call<PaymentResponse>('get_payment', [{
       payment_hash: paymentHash
     }]);
+  }
+
+  // Node Module
+  async getNodeInfo(): Promise<NodeInfo> {
+    return await this.call<NodeInfo>('node_info', []);
   }
 
   // endregion

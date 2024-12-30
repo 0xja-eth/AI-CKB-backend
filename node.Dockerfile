@@ -45,4 +45,4 @@ RUN npm run build
 EXPOSE 8228
 EXPOSE 8227
 
-CMD ["npm", "start-node"]
+CMD ["npm", "run", "start-node"]

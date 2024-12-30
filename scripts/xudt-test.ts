@@ -2,8 +2,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-import {getSigner} from "../src/ckb/signer";
-import {fetchTxDetail, filterInputs, findTxs, getBlockNumber} from "../src/ckb/tx";
+import {getSigner} from "../src/services/ckb/signer";
+import {fetchTxDetail, filterInputs, findTxs, getBlockNumber} from "../src/services/ckb/tx";
 import {cccClient} from "../src/core/ccc-client";
 import {Address, ccc, Hex} from "@ckb-ccc/core";
 

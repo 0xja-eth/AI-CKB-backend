@@ -1,7 +1,7 @@
 import express, { Router, Request, Response } from "express";
 import { cccClient } from "../core/ccc-client";
-import { capacityOf, capacityOfXUDT, transfer, transferXUDT } from "../ckb/transfer";
-import { getAddress, shannonToCKB } from "../ckb/signer";
+import { capacityOf, capacityOfXUDT, transfer, transferXUDT } from "../services/ckb/transfer";
+import { getAddress, shannonToCKB } from "../services/ckb/signer";
 import {authMiddleware} from "./auth";
 
 const router = Router();

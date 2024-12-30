@@ -1,5 +1,5 @@
 import {ccc} from "@ckb-ccc/core";
-import {cccClient} from "../core/ccc-client";
+import {cccClient} from "../../core/ccc-client";
 
 export function getPrivateKey() {
   return process.env.PRIVATE_KEY as string;

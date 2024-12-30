@@ -1,7 +1,7 @@
 import {Address, ccc, Hex} from "@ckb-ccc/core";
-import {cccClient} from "../core/ccc-client";
+import {cccClient} from "../../core/ccc-client";
 import {getSigner} from "./signer";
-import {client} from "../core/redis";
+import {client} from "../../core/redis";
 
 export const ExplorerURL = process.env.EXPLORER_URL || "https://pudge.explorer.nervos.org";
 

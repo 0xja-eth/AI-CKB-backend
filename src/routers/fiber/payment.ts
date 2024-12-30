@@ -2,9 +2,9 @@
 // Fiber transfer
 import {authMiddleware} from "../auth";
 import {Request, Response} from "express";
-import {transferByInvoice, TransferError} from "../../ckb/fiber/transfer";
-import {fiberClient, hex2Ckb} from "../../ckb/fiber/rpc";
-import {shannonToCKB} from "../../ckb/signer";
+import {transferByInvoice, TransferError} from "../../services/ckb/fiber/transfer";
+import {fiberClient, hex2Ckb} from "../../services/ckb/fiber/rpc";
+import {shannonToCKB} from "../../services/ckb/signer";
 import router from "./index";
 import {wait} from "../../utils/promise";
 

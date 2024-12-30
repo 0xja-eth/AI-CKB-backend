@@ -6,7 +6,7 @@ npm-debug.log
 dist
 build
 
-# Environment files
+# Environmentls files
 .env
 .env.*
 

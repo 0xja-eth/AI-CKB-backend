@@ -46,7 +46,7 @@ rpc:
   # By default RPC only binds to localhost, thus it only allows accessing from the same machine.
   # Allowing arbitrary machines to access the JSON-RPC port is dangerous and strongly discouraged.
   # Please strictly limit the access to only trusted machines.
-  listening_addr: "127.0.0.1:8227"
+  listening_addr: "0.0.0.0:8227"
 
 ckb:
   rpc_url: "https://testnet.ckbapp.dev/"
@@ -58,6 +58,16 @@ ckb:
         args: 0x878fcc6f1f08d48e87bb1c3b3d5083f23f8a39c5d5c764f253b55b998526439b
       cell_deps:
         - tx_hash: 0xed7d65b9ad3d99657e37c4285d585fea8a5fcaf58165d54dacf90243f911548b
+          index: 0
+          dep_type: code
+      auto_accept_amount: 1000000000
+    - name: USDI
+      script:
+        code_hash: 0xcc9dc33ef234e14bc788c43a4848556a5fb16401a04662fc55db9bb201987037
+        hash_type: type
+        args: 0x71fd1985b2971a9903e4d8ed0d59e6710166985217ca0681437883837b86162f
+      cell_deps:
+        - tx_hash: 0x03d029480416c2fc927dfbfe0ed1916ffaf55d1e1f3146c55cf2d3dd5e674e61
           index: 0
           dep_type: code
       auto_accept_amount: 1000000000
